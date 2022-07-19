@@ -11,9 +11,115 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Synopsis
 
+The objective of this report is to show the climatic events that are most harmful to the health
+of the population and those that cause the most economic damage. The damage to the health of the
+population will be measured by the number of fatalities and injuries, on the other hand, the
+economic damage will be measured by the costs in thousands of dollars in property and crop
+damage. The information for the report will be obtained from the [U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database](https://www.ncdc.noaa.gov/stormevents/). This database tracks characteristics of
+major storms and weather events in the United States, including when and where they occur, as
+well as estimates of any fatalities, injuries, and property damage.
+
 # Data Processing
+From [U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database](https://www.ncdc.noaa.gov/stormevents/), we obtained data about characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage. The events in the database start in the year 1950 and end in November 2011.
+
+## Reading data
+First, the data compressed file is downloaded. The data is a csv file compressed with the bz2 algorithm, so the file is read using the read.csv function without extracting the file.
+```{r load, cache=TRUE}
+file.url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+file.name <- "StormData.csv.bz2"
+
+if(!file.exists(file.name)) {
+  download.file(file.url, destfile = file.name)
+}
+
+storm.data <- read.csv(file.name, stringsAsFactors = FALSE)
+```
+
+The data has 37 variables which are 
+```{r str}
+str(storm.data)
+```
+
+And the following number of records
+```{r nrows}
+nrow(storm.data)
+```
+
+The variables of interest are EVTYPE, FATALITIES, INJURIES, PROPDMG and CROPDMG.
+PROPDMG and CROPDMG refer to property damage and crop damage respectively and are measured in thousands of dollars.
+
+```{r select, message=FALSE}
+library(dplyr)
+storm.data <- select(storm.data, EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)
+```
+
 
 # Results
+## Population health impact analysis
+Group average injuries and average fatalities by event type
+```{r health1}
+library(ggplot2)
 
+health.impact <- storm.data %>% 
+  group_by(EVTYPE) %>%
+  summarise(AVG.FATALITIES = mean(FATALITIES, na.rm = TRUE),
+            AVG.INJURIES = mean(INJURIES, na.rm = TRUE))
+```
 
+10 most harmful weather events by average fatalities.
+```{r fatalities}
+fatalities.ranking <- health.impact %>% 
+  select(EVTYPE, AVG.FATALITIES) %>%
+  arrange(desc(AVG.FATALITIES), .by_group=TRUE) %>%
+  slice_head(n=10)
+
+ggplot(data=fatalities.ranking, aes(x=EVTYPE, y=AVG.FATALITIES, fill = EVTYPE)) +
+  geom_bar(stat="identity", color="black") + 
+  labs(y="Average number of fatalities", 
+       x = "Weather event",
+       title="10 most harmful weather events by average fatalities") + 
+  scale_fill_brewer(palette="PiYG") +
+  theme(legend.position="none") +
+  scale_x_discrete(guide = guide_axis(n.dodge=3))
+```
+
+10 most harmful weather events by average injuries.
+```{r injuries}
+injuries.ranking <- health.impact %>% 
+  select(EVTYPE, AVG.INJURIES) %>%
+  arrange(desc(AVG.INJURIES), .by_group=TRUE) %>%
+  slice_head(n=10)
+
+ggplot(data=injuries.ranking, aes(x=EVTYPE, y=AVG.INJURIES, fill = EVTYPE)) +
+  geom_bar(stat="identity", color="black") + 
+  labs(y="Average number of injuries", 
+       x = "Weather event",
+       title="10 most harmful weather events by average injuries") + 
+  scale_fill_brewer(palette="Spectral") +
+  theme(legend.position="none") +
+  scale_x_discrete(guide = guide_axis(n.dodge=3))
+```
+
+## Economic damage analysis
+Regarding the sum of property damages and crop damages in thousands of US dollars,
+the next figure shows the 10 weather events which cause more damages in economic terms.
+```{r economic.damage}
+library(ggplot2)
+
+economic.damage <- storm.data %>%
+  group_by(EVTYPE) %>%
+  summarise(TOTAL.DAMAGES.IN.DOLLARS = sum(PROPDMG, na.rm = TRUE) + 
+              sum(CROPDMG, na.rm = TRUE)) %>%
+  arrange(desc(TOTAL.DAMAGES.IN.DOLLARS), .by_group=TRUE) %>%
+  slice_head(n=10)
+
+ggplot(data=economic.damage, aes(x=EVTYPE, y=TOTAL.DAMAGES.IN.DOLLARS, fill = EVTYPE)) +
+  geom_bar(stat="identity", color="black") + 
+  labs(y="Thousands of dollars", 
+       x = "Weather event",
+       title="10 weather events which cause more damages in economic terms") + 
+  scale_fill_brewer(palette="Paired") +
+  theme(legend.position="none") +
+  scale_x_discrete(guide = guide_axis(n.dodge=2))
+```
 
