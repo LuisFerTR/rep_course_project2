@@ -1,0 +1,19 @@
+---
+title: "Most harmful weather events' impact on population health and economic"
+author: "Luis Talavera"
+date: "19 de julio de 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Synopsis
+
+# Data Processing
+
+# Results
+
+
+
